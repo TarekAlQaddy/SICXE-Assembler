@@ -36,8 +36,6 @@ fabric.properties
 # .idea/misc.xml
 # *.ipr
 
-# Sonarlint plugin
-.idea/sonarlint
 
 ### Windows ###
 # Windows thumbnail cache files

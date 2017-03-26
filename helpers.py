@@ -1,16 +1,13 @@
-def start_handle(str):
+def start_handle(str, errors):
     """
     returns the address of the first line in program
     """
-    if str[9:14].lower() == 'start':
+    if str[9:14].lower().strip() == 'start':
         start_add = str[17:34]
         start_add = start_add.strip()
         return int(start_add, 16)
     else:
-        # TODO: handle error end the program
-        print("No START at begin of the program")
-
-        # TODO: add format handling function
+        errors.append("No START at begin of the program")
 
 
 def locctr_increamenter(opcode, operand):
@@ -27,8 +24,9 @@ def locctr_increamenter(opcode, operand):
                 return hex(temp / 2)
             else:
                 return hex(temp + 1 / 2)
-        if operand[0].lower() =='c':
+        elif operand[0].lower() =='c':
             return hex(temp)
+        #TODO: return No of bytes needed for decimal numbers
     if opcode.lower() == "resb":
         value = hex(int(operand))
         return value
