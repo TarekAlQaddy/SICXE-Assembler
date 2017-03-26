@@ -12,6 +12,7 @@ def pass1(file_name):
     line_no =0
     prog_len = 0
     error_str = ''
+    operand =''
 
     file = open(file_name, 'r')
     str = file.read()
@@ -43,7 +44,8 @@ def pass1(file_name):
             print("Error: No such opcode")
 
         #TODO: add No of bytes LOCCTR increaments(helper function) & printing at the end
-
+        operand =inst[17:34]
+        LOCCTR = helpers.locctr_increamenter(opcode,operand)
 
 
 #TODO: we need a better way to handle the errors
