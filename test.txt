@@ -1,0 +1,18 @@
+COPY     START   1000               COPY FILE FROM INPUT TO OUTPUT
+FIRST    STL     RETADR             SAVE RETURN ADDRESS
+CLOOP    JSUB    RDREC              READ INPUT RECORD
+         LDA     LENGTH
+         COMP    ZERO
+         JEQ     ENDFIL
+         +JSUB   CLOOP
+         COMP    #0
+         J       @RETADR
+         COMPR   A,S
+         STCH    BUFFER,X
+EOF      BYTE    C'EOF'
+THREE    WORD    3
+RETADR   RESW    1
+BUFFER   RESB    100
+.
+.
+.EXAMPLE PROGRAM (DOES NOTHING)
