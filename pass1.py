@@ -45,7 +45,7 @@ def pass1(file_name):
 
         #TODO: add No of bytes LOCCTR increaments(helper function) & printing at the end
         operand =inst[17:34]
-        LOCCTR = helpers.locctr_increamenter(opcode,operand)
+        LOCCTR += helpers.locctr_increamenter(opcode,operand)
 
 
 #TODO: we need a better way to handle the errors
