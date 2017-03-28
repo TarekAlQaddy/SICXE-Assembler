@@ -9,9 +9,10 @@ CLOOP    JSUB    RDREC              READ INPUT RECORD
          J       @RETADR
          COMPR   A,S
          STCH    BUFFER,X
+         ADD
 EOF      BYTE    C'EOF'
 THREE    WORD    3
-RETADR   RESW    1
+RETADR   RESW    2
 BUFFER   RESB    100
 .
 .
