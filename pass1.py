@@ -43,12 +43,13 @@ class Pass1:
             return True
         return False
 
-    def end_handle(self,end_inst):
-        if end_inst[9:14].lower().strip()=='end':
+    def end_handle(self,opcode):
+        if opcode=='end':
             self.end_address=self.LOCCTR
-            return  self.end_address
+            self.prog_len=self.calc_prog_len()
         else:
             self.errors.append("Error: No end instruction found in your code!")
+
 
     def calc_prog_len(self):
         return self.end_address-self.start_address
@@ -77,21 +78,34 @@ class Pass1:
             # opcode handling if not in OPTAB
             if not self.OPTAB.get(opcode):
                 self.errors.append("Error: No such opcode")
+                continue
 
             self.print_line(inst)
+            if self.instructions.index(inst)==len(self.instructions):
+                self.end_handle(opcode)
+                return
+            if opcode =="end":
+                self.errors.append("End found ")
+                return
 
-            self.LOCCTR += Pass1.locctr_increamenter(opcode, operand)
+            self.LOCCTR += self.locctr_increamenter(opcode, operand)
+            #handle end bta3 nbreak
             self.line_no += 1
 
-    @staticmethod
+
     def locctr_increamenter(self,opcode, operand):
+        # if opcode=='end':
+        #     self.end_address=self.LOCCTR
+        #     return  0
+        # elif:
+        #     self.errors.append("Error: No end instruction found in your code!")
+
         if opcode.lower() == "resw":
             temp = int(operand) * 3
             return temp
         if opcode.lower() == "word":
-            if int(operand)>=2**24:
-                self.errors.append("Eroor: Max word value exceeded")
-        return 3
+
+         return 3
         if opcode.lower() == "byte":
             value = operand.partition("'")[-1].rpartition("'")[0]
             temp = len(value)
@@ -107,14 +121,14 @@ class Pass1:
             return value
         if opcode.lower() == "end":
             return 0
-        if opcode.find('+'):
+        if opcode.find('+') != -1:
             return 4
-        if operand.find(","):
+        if operand.find(",") != -1:
             str = operand.split(",")
             if str[1].lower() == 'x':
                 return 3
             return 2
-        if operand.isspace() | operand.isnull():
+        if operand.isspace():
             return 1
         else:
             return 3
