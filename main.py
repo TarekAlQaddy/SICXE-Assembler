@@ -17,12 +17,12 @@ pass1 = Pass1(tab)
 
 pass1.start('test.txt')
 
-print(pass1.LOCCTR, pass1.SYMTAB, "\n\n")
-
+# print(pass1.LOCCTR, pass1.SYMTAB, "\n\n")
+#
 for i in pass1.final:
     print(i)
 
-
+print(pass1.SYMTAB)
 pass2 = Pass2()
 
-pass2.start(pass1.final, pass1.SYMTAB,'optab.txt')
+pass2.start(pass1.final, pass1.SYMTAB, 'optab.txt')

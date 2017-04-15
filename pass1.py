@@ -85,7 +85,10 @@ class Pass1:
                 return
 
             # opcode handling if not in OPTAB
-            if not self.OPTAB.get(opcode):
+            temp = opcode
+            if temp[0] == '+':
+                temp = temp[1:]
+            if not self.OPTAB.get(temp):
                 self.errors.append("Error: No such opcode")
                 continue
 
@@ -143,6 +146,8 @@ class Pass1:
             str = operand.split(",")
             if str[1].lower() == 'x':
                 return [3, False]
+            return [2, False]
+        if opcode == 'clear' or opcode == 'svc' or opcode == 'tixr':
             return [2, False]
         if operand.isspace():
             return [1, False]

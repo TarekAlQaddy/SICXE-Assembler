@@ -3,8 +3,6 @@ jsub 28
 lda 1C
 comp 34
 jeq 68
-+jsub 10
-comp 38
 j 14
 compr 3C
 stch 7C
