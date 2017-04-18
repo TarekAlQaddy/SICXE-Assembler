@@ -2,6 +2,7 @@ COPY     START   1000               COPY FILE FROM INPUT TO OUTPUT
 FIRST    STL     RETADR             SAVE RETURN ADDRESS
 CLOOP    JSUB    RDREC              READ INPUT RECORD
          LDA     LENGTH
+         Base    THREE
          COMP    ZERO
          JEQ     ENDFIL
          +JSUB   CLOOP

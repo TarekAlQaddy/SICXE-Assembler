@@ -1,74 +1,93 @@
-import binascii
-
-
 class Pass2:
     def __init__(self):
         self.SYMTAB = {}
         self.table = []
         self.opcode = {}
-        self.reg_num = {'a': 0, 'x': 1, 'l': 2, 'pc': 8, 'sw': 9, 'b': 3, 's': 4, 't': 5, 'f': 6}
+        self.reg_num = {'a': 0x00, 'x': 0x01, 'l': 0x02, 'pc': 0x08, 'sw': 0x09, 'b': 0x03, 's': 0x04, 't': 0x05,
+                        'f': 0x06}
+        self.base_flag = False
+        self.base_reg = None
 
     def start(self, table, SYMTAB, txtfile):
         with open(txtfile) as f:
             for line in f:
                 (key, val) = line.split()
                 self.opcode[key] = val
-
         self.SYMTAB = SYMTAB
         self.table = table
         self.parse()
-
-    def getInstructionIndex(self, str):
-        for i in range(len(self.opcode)):
-            if self.opcode[i]["memonic"] == str:
-                return i
-        return -1
-
-    def hexa_to_binary_conv(self, num, length):
-        my_hexdata = num
-        scale = 16  ## equals to hexadecimal
-        return bin(int(my_hexdata, scale))[2:].zfill(length)
 
     def parse(self):
 
         for index, inst in enumerate(self.table):
             temp_object_code = ''
             hex_object_code = 0
-            print(temp_object_code)
-            if inst['is_dir']:
-                # handle
-                continue
             temp = inst['opcode']
+            if temp == 'base':
+                self.base_flag = True
+            if temp == 'nobase':
+                self.base_flag = False
+            if temp == 'ldb':
+                self.base_reg = inst['operand']
+            else:
+                print('ERROR!!! base loaded without reference')
+            if inst['is_dir']:
+
+                if temp == 'resw' or 'resw':  # --------------- 7anefsel el HTME record
+                    continue
+
+                if temp == 'word':
+                    hex_object_code = 0x000000
+                    hex_object_code &= inst['operand']
+                    print(hex(hex_object_code))
+                    continue
+
+                if temp == 'byte':
+                    hex_object_code = 0x00
+                    value = operand.partition("'")[-1].rpartition("'")[0]
+                    temp = len(value)
+                    if inst[operand[0]].lower() == 'x':
+                        if temp % 2 == 0:
+                            hex_object_code &= value
+
+                        else:
+                            hex_object_code &= value >> 1
+
+                    elif operand[0].lower() == 'c':
+                        hex_object_code &= format(ord(value), "x")
+
+                    else:
+                        hex_object_code &= hex(value)
+                    continue
+
             if temp[0] == '+':
                 temp = temp[1:]
-            temp_object_code += self.hexa_to_binary_conv(str(self.opcode.get(temp)), 8)
+
             if inst['type'] == 1:
+                hex_object_code = 0x00
+                hex_object_code &= self.opcode.get(temp)
+                print(hex(hex_object_code))
                 continue
+
             if inst['type'] == 2:
+                hex_object_code = 0x0000
+                opcode = int('0x' + self.opcode[inst['opcode']], 0)
+                hex_object_code |= (opcode << 8)
                 operand = inst['operand']
                 if operand.find(",") == -1:
-                    # TODO:
-                    # FIX: case of type2 => if only one operand it's in the first 4 bits then add 4 zeros
-                    # FIX: remove all these strings and use hexa instead (hex_object_code instead of temp_object_code)
-                    temp_object_code += '0000'
                     if self.reg_num.get(operand):
-                        print(self.reg_num.get(operand))
-                        temp_object_code += self.hexa_to_binary_conv(self.reg_num.get(operand), 4)
-                        print(inst["opcode"])
-                        print(temp_object_code)
+                        try:
+                            hex_object_code &= self.reg_num.get(operand)
+                        except KeyError:
+                            print("Register not found!")
                         continue
-                    else:
-                        temp_object_code += self.hexa_to_binary_conv(operand, 8)
-                        print(temp_object_code)
-                        continue
+                        # aw yenfa3 mesh 3aref momken ykoon masalan rakam aw 7aga??------------elly howa law mafesh operand register momken ykon rakam?
+
                 else:
                     string = operand.split(",")
-
-                    print(temp_object_code)
-                    temp_object_code += self.hexa_to_binary_conv(repr(self.reg_num.get(string[0])), 4)
-
-                    temp_object_code += self.hexa_to_binary_conv(repr(self.reg_num.get(string[1])), 4)
-                    print(temp_object_code + "\n")
+                    hex_object_code |= self.reg_num.get(string[0]) << 4
+                    hex_object_code |= self.reg_num.get(string[1])
+                    print(hex(hex_object_code))
                     continue
 
             if inst['type'] == 3:
@@ -76,13 +95,12 @@ class Pass2:
 
                 opcode = int('0x' + self.opcode[inst['opcode']], 0)
                 hex_object_code |= (opcode << 16)
-
                 operand = inst['operand']
                 locctr = inst['locctr']
 
                 if (operand.find(',') != -1) and (operand[-1] == 'x'):
                     hex_object_code |= 0x008000
-                    operand = operand[:len(operand)-2]
+                    operand = operand[:len(operand) - 2]
 
                 if inst['operand'][0] == '@':
                     hex_object_code |= 0x020000
@@ -96,8 +114,10 @@ class Pass2:
                         hex_object_code |= 0x002000
                         hex_object_code |= (operand_address - locctr - 3)
                     elif 0 <= operand_address - locctr <= 4095:
-                        hex_object_code |= 0x004000
-                        # TODO:handle if base relative (operand_address - base)
+                        if self.base_flag and self.base_reg:
+                            hex_object_code |= 0x004000
+                            hex_object_code |= (operand_address - self.base_reg)
+
                     else:
                         print('operand is out of range of PC and Base relative')
                         # TODO:throw exception
@@ -133,7 +153,9 @@ class Pass2:
                             hex_object_code |= (operand_address - locctr - 3)
                         elif 0 <= operand_address - locctr <= 4095:
                             hex_object_code |= 0x004000
-                            # TODO:handle if base relative (operand_address - base)
+                            if self.base_flag and self.base_reg:
+                                hex_object_code |= 0x004000
+                                hex_object_code |= (operand_address - self.base_reg)
                         else:
                             print('operand is out of range of PC and Base relative')
                             continue

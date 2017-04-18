@@ -4,9 +4,7 @@ from pass2 import Pass2
 tab = {}
 
 f = open('optab.txt', 'r')
-#eh str1 dah?
 str1 = f.read()
-#eh ops deh?
 ops = str1.split('\n')
 
 for i in ops:
@@ -17,8 +15,7 @@ pass1 = Pass1(tab)
 
 pass1.start('test.txt')
 
-# print(pass1.LOCCTR, pass1.SYMTAB, "\n\n")
-#
+
 for i in pass1.final:
     print(i)
 
