@@ -12,7 +12,6 @@ CLOOP    JSUB    RDREC              READ INPUT RECORD
          J       @RETADR
 THREE    COMPR   A,S
          STCH    BUFFER,X
-         ADD
 EOF      BYTE    C'EOF'
 HAH      BYTE    500
 THREE    WORD    3

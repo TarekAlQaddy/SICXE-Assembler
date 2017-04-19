@@ -119,8 +119,8 @@ class Pass1:
         returns the number of bytes to be increamented by LOCCTR and if the opcode is assembler directive or not
         :return: [no_of_bytes, is_directive?]
         """
-        if opcode =="base":
-            return [0,True]
+        if opcode == "base":
+            return [0, True]
         if opcode == "resw":
             temp = int(operand) * 3
             return [temp, True]

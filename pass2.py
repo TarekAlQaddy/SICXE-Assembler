@@ -20,77 +20,61 @@ class Pass2:
     def parse(self):
 
         for index, inst in enumerate(self.table):
-            temp_object_code = ''
             hex_object_code = 0
             temp = inst['opcode']
-            if temp == 'base':
-                self.base_flag = True
-            if temp == 'nobase':
-                self.base_flag = False
             if temp == 'ldb':
-                self.base_reg = inst['operand']
-            else:
-                print('ERROR!!! base loaded without reference')
+                self.base_flag = True
+            if temp == 'base' and self.base_flag:
+                try:
+                    self.base_reg = self.SYMTAB[inst['operand'][1:]]
+                except KeyError:
+                    print("{} Label not defined!".format(inst['operand'][1:]))
+
             if inst['is_dir']:
-
-                if temp == 'resw' or 'resw':  # --------------- 7anefsel el HTME record
+                if temp == 'resw' or temp == 'resb':  # --------------- 7anefsel el HTME record
                     continue
 
-                if temp == 'word':
+                if inst['opcode'] == 'word':
                     hex_object_code = 0x000000
-                    hex_object_code &= inst['operand']
-                    print(hex(hex_object_code))
-                    continue
-
-                if temp == 'byte':
+                    hex_object_code |= int(inst['operand'])
+                    #TODO:
+                elif temp == 'byte':
                     hex_object_code = 0x00
-                    value = operand.partition("'")[-1].rpartition("'")[0]
-                    temp = len(value)
-                    if inst[operand[0]].lower() == 'x':
+                    #TODO:
+                    if inst['operand'][0] == 'x':
+                        value = inst['operand'].partition("'")[-1].rpartition("'")[0]
+                        temp = len(value)
                         if temp % 2 == 0:
-                            hex_object_code &= value
-
+                            hex_object_code |= value
                         else:
-                            hex_object_code &= value >> 1
+                            hex_object_code |= value << 4
+                            hex_object_code |= value >> 4
 
-                    elif operand[0].lower() == 'c':
-                        hex_object_code &= format(ord(value), "x")
+                    elif inst['operand'][0] == 'c':
+                        value = inst['operand'].partition("'")[-1].rpartition("'")[0]
+                        hex_object_code |= ord(value)
 
                     else:
-                        hex_object_code &= hex(value)
-                    continue
+                        hex_object_code |= int(inst['operand'])
 
-            if temp[0] == '+':
-                temp = temp[1:]
-
-            if inst['type'] == 1:
+            elif inst['type'] == 1:
                 hex_object_code = 0x00
-                hex_object_code &= self.opcode.get(temp)
-                print(hex(hex_object_code))
-                continue
+                hex_object_code |= self.opcode.get(temp)
 
-            if inst['type'] == 2:
+            elif inst['type'] == 2:
                 hex_object_code = 0x0000
                 opcode = int('0x' + self.opcode[inst['opcode']], 0)
                 hex_object_code |= (opcode << 8)
                 operand = inst['operand']
                 if operand.find(",") == -1:
                     if self.reg_num.get(operand):
-                        try:
-                            hex_object_code &= self.reg_num.get(operand)
-                        except KeyError:
-                            print("Register not found!")
-                        continue
-                        # aw yenfa3 mesh 3aref momken ykoon masalan rakam aw 7aga??------------elly howa law mafesh operand register momken ykon rakam?
-
+                        hex_object_code |= (self.reg_num.get(operand) << 4)
                 else:
                     string = operand.split(",")
                     hex_object_code |= self.reg_num.get(string[0]) << 4
                     hex_object_code |= self.reg_num.get(string[1])
-                    print(hex(hex_object_code))
-                    continue
 
-            if inst['type'] == 3:
+            elif inst['type'] == 3:
                 hex_object_code = 0x000000
 
                 opcode = int('0x' + self.opcode[inst['opcode']], 0)
@@ -113,14 +97,13 @@ class Pass2:
                     if -2048 <= operand_address - locctr - 3 <= 2047:
                         hex_object_code |= 0x002000
                         hex_object_code |= (operand_address - locctr - 3)
-                    elif 0 <= operand_address - locctr <= 4095:
+                    elif 0 <= operand_address - self.base_reg <= 4095:
                         if self.base_flag and self.base_reg:
                             hex_object_code |= 0x004000
                             hex_object_code |= (operand_address - self.base_reg)
 
                     else:
                         print('operand is out of range of PC and Base relative')
-                        # TODO:throw exception
                         continue
 
                 elif inst['operand'][0] == '#':
@@ -140,7 +123,6 @@ class Pass2:
                         else:
                             print('immediate is too big for format 3')
                             continue
-                            # TODO: throw exception
                     else:
                         try:
                             operand_address = self.SYMTAB[operand[1:]]
@@ -171,14 +153,15 @@ class Pass2:
                     if -2048 <= operand_address - locctr - 3 <= 2047:
                         hex_object_code |= 0x002000
                         hex_object_code |= (operand_address - locctr - 3)
-                    elif 0 <= operand_address - locctr <= 4095:
-                        hex_object_code |= 0x004000
-                        # TODO:handle if base relative (operand_address - base)
+                    elif 0 <= operand_address - self.base_reg <= 4095:
+                        if self.base_flag and self.base_reg:
+                            hex_object_code |= 0x004000
+                            hex_object_code |= (operand_address - self.base_reg)
                     else:
                         print('operand is out of range of PC and Base relative')
                         continue
 
-            if inst['type'] == 4:
+            elif inst['type'] == 4:
                 hex_object_code = 0x00000000
                 opcode = int('0x' + self.opcode[inst['opcode'][1:]], 0)
                 hex_object_code |= (opcode << 24)

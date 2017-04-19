@@ -23,3 +23,5 @@ print(pass1.SYMTAB)
 pass2 = Pass2()
 
 pass2.start(pass1.final, pass1.SYMTAB, 'optab.txt')
+
+#TODO: make errors array here and append in each pass error, line no
