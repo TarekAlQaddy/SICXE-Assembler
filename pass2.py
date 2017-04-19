@@ -17,6 +17,9 @@ class Pass2:
         self.table = table
         self.parse()
 
+    def convert_to_ascii(self,text):
+        return "".join("{:02x}".format(ord(c)) for c in text)
+
     def parse(self):
 
         for index, inst in enumerate(self.table):
@@ -34,28 +37,28 @@ class Pass2:
                 if temp == 'resw' or temp == 'resb':  # --------------- 7anefsel el HTME record
                     continue
 
+
                 if inst['opcode'] == 'word':
                     hex_object_code = 0x000000
-                    hex_object_code |= int(inst['operand'])
-                    #TODO:
+                    hex_object_code |= (int(inst['operand']))
+                    print(str(hex_object_code).zfill(6))
+
                 elif temp == 'byte':
-                    hex_object_code = 0x00
-                    #TODO:
                     if inst['operand'][0] == 'x':
                         value = inst['operand'].partition("'")[-1].rpartition("'")[0]
                         temp = len(value)
                         if temp % 2 == 0:
-                            hex_object_code |= value
+                            hex_object_code = int(value)
                         else:
-                            hex_object_code |= value << 4
-                            hex_object_code |= value >> 4
-
+                            hex_object_code = int(value.zfill(temp+1))
                     elif inst['operand'][0] == 'c':
                         value = inst['operand'].partition("'")[-1].rpartition("'")[0]
-                        hex_object_code |= ord(value)
+                        temprar = self.convert_to_ascii(value)
+                        hex_object_code |= int(temprar,16)
 
                     else:
                         hex_object_code |= int(inst['operand'])
+                        print(str(hex(hex_object_code))[2:].zfill(6))
 
             elif inst['type'] == 1:
                 hex_object_code = 0x00
