@@ -2,20 +2,21 @@ from math import log2, ceil
 
 
 class Pass1:
-
     def __init__(self, optab):
         self.SYMTAB = {}
         self.OPTAB = optab
         self.LOCCTR = 0
         self.start_address = 0
         self.end_address = 0
+        self.first_exec = ''
+        self.name = ''
         self.line_no = 0
         self.prog_len = 0
+        self.directives = {'resw': 1, 'resb': 1, 'base': 1, 'byte': 1, 'word': 1, 'start': 1, 'end': 1}
         self.instructions = []
         self.errors = []
         self.registers = ['a', 'l', 'pc', 'sw', 'b', 's', 't', 'f']
         self.final = []
-        self.baseflag = False
 
     def start(self, file_name):
         file = open(file_name, 'r')
@@ -36,24 +37,27 @@ class Pass1:
         if start_inst[9:14].lower().strip() == 'start':
             start_add = start_inst[17:34]
             start_add = start_add.strip()
+            self.name = start_inst[0:7].strip().lower()
             return int(start_add, 16)
         else:
             self.errors.append("No START at begin of the program")
+            return 0
 
     def is_reg(self, str):
         if str in self.registers:
             return True
         return False
 
-    def end_handle(self, opcode):
+    def end_handle(self, opcode, operand):
         if opcode == 'end':
             self.end_address = self.LOCCTR
             self.prog_len = self.calc_prog_len()
+            self.first_exec = operand
         else:
             self.errors.append("Error: No end instruction found in your code!")
 
     def calc_prog_len(self):
-        return self.end_address-self.start_address
+        return self.end_address - self.start_address
 
     def parse(self):
         for index, inst in enumerate(self.instructions[1:]):
@@ -76,9 +80,9 @@ class Pass1:
                     label_flag = False
                     self.errors.append("Error: Label defined more than once")
 
-            #end handling
-            if index == len(self.instructions)-2:
-                self.end_handle(opcode)
+            # end handling
+            if index == len(self.instructions) - 2:
+                self.end_handle(opcode, operand)
                 self.print_line(inst)
                 return
             if opcode == "end":
@@ -90,8 +94,9 @@ class Pass1:
             if temp[0] == '+':
                 temp = temp[1:]
             if not self.OPTAB.get(temp):
-                self.errors.append("Error: No such opcode")
-                continue
+                if not self.directives.get(temp):
+                    self.errors.append("Error: No such opcode")
+                    continue
 
             self.print_line(inst)
 
@@ -138,11 +143,14 @@ class Pass1:
                 return [temp, True]
             else:
                 no_of_bits = ceil(log2(int(operand)))
-                bytes = ceil(no_of_bits/8)
+                bytes = ceil(no_of_bits / 8)
                 return [bytes, True]
         if opcode == "resb":
             value = int(operand)
             return [value, True]
+        if opcode == "rsub":
+            return [3, False]
+            return [3, False]
         if opcode.find('+') != -1:
             return [4, False]
         if operand.find(",") != -1:

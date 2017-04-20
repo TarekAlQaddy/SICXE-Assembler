@@ -1,24 +1,41 @@
-COPY     START   1000               COPY FILE FROM INPUT TO OUTPUT
-FIRST    STL     RETADR             SAVE RETURN ADDRESS
-CLOOP    JSUB    RDREC              READ INPUT RECORD
-         LDA     LENGTH
-         Base    THREE
-         COMP    ZERO
-         JEQ     ENDFIL
-         +JSUB   CLOOP
-         +JSUB   #20112
-         COMP    #0
-         COMP    #255
-         J       @RETADR
-THREE    COMPR   A,S
-         STCH    BUFFER,X
-EOF      BYTE    C'EOF'
-         BYTE    X'164'
-HAH      BYTE    500
-THREE    WORD    3
-RETADR   RESW    2
-BUFFER   RESB    100
+FIBO     START   0
+FIRST    LDT     #1
+         LDS     #10
+         +JSUB   RDREC
+         +JSUB   WRREC
+LENGTH   RESW    1
 .
+. SUBROUTINE RDREC
 .
-.EXAMPLE PROGRAM (DOES NOTHING)
-         END
+RDREC    CLEAR   A
+RLOOP    TD      INPUT
+         JEQ     RLOOP
+         RD      INPUT
+         COMPR   A,T
+         JLT     RLOOP
+         COMPR   A,S
+         JGT     RLOOP
+         STA     LENGTH
+         RSUB
+INPUT    BYTE    X'F1'
+.
+.SUBROUTINE WDRE C
+.
+WRREC    LDX     #0
+         LDS     #1
+         LDA     #0
+         LDT     LENGTH
+WLOOP    TD      OUTPUT
+         JEQ     WLOOP
+         WD      OUTPUT
+         ADDR    S,A
+         STA     VALUE1
+         STS     VALUE2
+         LDA     VALUE2
+         LDS     VALUE1
+         TIXR    T
+         JLT     WLOOP
+OUTPUT   BYTE    X'05'
+VALUE1   RESW    1
+VALUE2   RESW    1
+         END     WRREC
