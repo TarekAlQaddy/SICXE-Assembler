@@ -2,7 +2,7 @@ from math import log2, ceil
 
 
 class Pass1:
-    def __init__(self, optab):
+    def __init__(self, optab,error):
         self.SYMTAB = {}
         self.OPTAB = optab
         self.LOCCTR = 0
@@ -14,7 +14,7 @@ class Pass1:
         self.prog_len = 0
         self.directives = {'resw': 1, 'resb': 1, 'base': 1, 'byte': 1, 'word': 1, 'start': 1, 'end': 1}
         self.instructions = []
-        self.errors = []
+        self.errors = error
         self.registers = ['a', 'l', 'pc', 'sw', 'b', 's', 't', 'f']
         self.final = []
 
@@ -68,7 +68,11 @@ class Pass1:
 
             label = inst[0:7].strip().lower()
             opcode = inst[9:14].strip().lower()
-            operand = inst[17:34].strip().lower()
+            if opcode == 'byte':
+                if inst[17] == 'C' or inst[17] == 'X':
+                    operand = inst[17:34].strip()
+            else:
+                operand = inst[17:34].strip().lower()
 
             # label handling
             label_flag = None
@@ -78,7 +82,7 @@ class Pass1:
                     self.SYMTAB[label] = self.LOCCTR
                 else:
                     label_flag = False
-                    self.errors.append("Error: Label defined more than once")
+                    self.errors.append("Error: Label {} defined more than once".format(label))
 
             # end handling
             if index == len(self.instructions) - 2:
@@ -95,7 +99,7 @@ class Pass1:
                 temp = temp[1:]
             if not self.OPTAB.get(temp):
                 if not self.directives.get(temp):
-                    self.errors.append("Error: No such opcode")
+                    self.errors.append("Error: No such opcode {}".format(temp))
                     continue
 
             self.print_line(inst)
