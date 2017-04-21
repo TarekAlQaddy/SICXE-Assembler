@@ -1,0 +1,13 @@
+ERROR HANDLING:
+	-errors in pass1:
+		- if opcode is not defined in op-table
+		- if label defined more than once 
+		- if program has no START or no END
+	the errors are printed to the console and the instruction is ignored from the program
+	if label defined more than once it's ignored 
+
+	-errors in pass2:
+		- if operand label is not defined 
+		- if operand offset is out of range of PC and Base relative instructions
+		- id immediate operand is too big for type 3 & 4
+	the errors are printed at the end of HTME record 	

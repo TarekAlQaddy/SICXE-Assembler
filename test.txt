@@ -38,4 +38,4 @@ WLOOP    TD      OUTPUT
 OUTPUT   BYTE    X'05'
 VALUE1   RESW    1
 VALUE2   RESW    1
-         END     WRREC
+         END     FIRST

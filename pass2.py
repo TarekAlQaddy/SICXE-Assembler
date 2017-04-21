@@ -38,7 +38,7 @@ class Pass2:
         length_list1 = []
 
         # pre fill length_list1 with T lengths that will be put in HTME
-        self.inst_num=0
+        self.inst_num=-1
         for inst in self.table:
             self.inst_num+=1
             try:
@@ -52,7 +52,7 @@ class Pass2:
             except KeyError:
                 self.errors.append('Severe error at instruction number {}'.format(self.inst_num))
         length_list1.append((60 - temp_len) // 2)
-        self.inst_num=0
+        self.inst_num=-1
         # remove zeros
         length_list = []
         for i in length_list1:
@@ -108,11 +108,14 @@ class Pass2:
                 self.final.append('\n')
 
         first_ex = 0
-        try:
-            first_ex = hex(int(self.SYMTAB[self.first_exec]))[2:]
-            self.final.append('E ' + first_ex)
-        except KeyError:
-            self.errors.append("label of first excecutable instruction is not pre defined !")
+        if self.first_exec != '':
+            try:
+                first_ex = hex(int(self.SYMTAB[self.first_exec]))[2:]
+                self.final.append('E ' + first_ex)
+            except KeyError:
+                self.errors.append("label of first executable instruction is not pre defined !")
+                self.final.append('E ' + hex(self.start_add)[2:])
+        else:
             self.final.append('E ' + hex(self.start_add)[2:])
 
     def write_to_htme(self, filename):
@@ -124,8 +127,9 @@ class Pass2:
         printable_list = list(set(self.errors))
         for i in printable_list:
             file.write(i+'\n')
+
     def parse(self):
-        self.inst_num=0
+        self.inst_num=-1
         for index, inst in enumerate(self.table):
             hex_object_code = 0
             self.inst_num += 1
@@ -212,13 +216,13 @@ class Pass2:
                         else:
                             tows_comp = operand_address - locctr - 3 + 0xfff + 1
                             hex_object_code |= tows_comp
-                    elif 0 <= operand_address - self.base_reg <= 4095:
+                    elif self.base_reg and (0 <= operand_address - self.base_reg <= 4095):
                         if self.base_flag and self.base_reg:
                             hex_object_code |= 0x004000
                             hex_object_code |= (operand_address - self.base_reg)
                     else:
                         self.errors.append(
-                            'operand is out of range of PC and Base relative at insttuction number {}'.format(
+                            'operand is out of range of PC and Base relative at instruction number {}'.format(
                                 self.inst_num))
                         continue
 
@@ -252,14 +256,14 @@ class Pass2:
                             else:
                                 tows_comp = operand_address - locctr - 3 + 0xfff + 1
                                 hex_object_code |= tows_comp
-                        elif 0 <= operand_address - locctr <= 4095:
+                        elif self.base_reg and (0 <= operand_address - self.base_reg <= 4095):
                             hex_object_code |= 0x004000
                             if self.base_flag and self.base_reg:
                                 hex_object_code |= 0x004000
                                 hex_object_code |= (operand_address - self.base_reg)
                         else:
                             self.errors.append(
-                                'operand is out of range of PC and Base relative at insttuction number {}'.format(
+                                'operand is out of range of PC and Base relative at instruction number {}'.format(
                                     self.inst_num))
                             continue
 
@@ -278,13 +282,13 @@ class Pass2:
                         else:
                             tows_comp = operand_address - locctr - 3 + 0xfff + 1
                             hex_object_code |= tows_comp
-                    elif 0 <= operand_address - self.base_reg <= 4095:
+                    elif self.base_reg and (0 <= operand_address - self.base_reg <= 4095):
                         if self.base_flag and self.base_reg:
                             hex_object_code |= 0x004000
                             hex_object_code |= (operand_address - self.base_reg)
                     else:
                         self.errors.append(
-                            'operand is out of range of PC and Base relative at insttuction number {}'.format(
+                            'operand is out of range of PC and Base relative at instruction number {}'.format(
                                 self.inst_num))
                         continue
                 self.table[index]['objcode'] = hex(hex_object_code)[2:].zfill(6)

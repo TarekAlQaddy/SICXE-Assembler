@@ -100,6 +100,7 @@ class Pass1:
             if not self.OPTAB.get(temp):
                 if not self.directives.get(temp):
                     self.errors.append("Error: No such opcode {}".format(temp))
+                    self.print_errors()
                     continue
 
             self.print_line(inst)
@@ -154,7 +155,6 @@ class Pass1:
             return [value, True]
         if opcode == "rsub":
             return [3, False]
-            return [3, False]
         if opcode.find('+') != -1:
             return [4, False]
         if operand.find(",") != -1:
@@ -179,3 +179,4 @@ class Pass1:
         if len(self.errors) >= 1:
             for error in self.errors:
                 print(error)
+        self.errors = []
