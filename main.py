@@ -12,7 +12,12 @@ with open('optab.txt') as f:
 
 pass1 = Pass1(tab, errors)
 
-pass1.start('test2.txt')
+pass1.start('test.txt')
+
+# for n in pass1.final:
+#     print(n)
+
+print(pass1.SYMTAB)
 
 pass2 = Pass2(errors)
 

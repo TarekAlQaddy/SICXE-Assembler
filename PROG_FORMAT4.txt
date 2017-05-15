@@ -1,0 +1,44 @@
+MAIN     START   1000
+         CLEAR   X
+         JSUB    GETPAIR
+         STCH    ADDR2
+         JSUB    GETPAIR
+         STCH    ADDR3
+         +LDB    ADDR
+         JSUB    GETPAIR
+         STCH    ADDR
+         JSUB    GETPAIR
+         STCH    ADDR2
+LOOP     JSUB    GETPAIR
+         BASE    ADDR
+         STCH    ADDR,X
+         NOBASE
+         TIXR    X
+         J       LOOP
+GETPAIR  STL     RTADDR
+         JSUB    READ
+         SHIFTL  A,4
+         STCH    HEX
+         OR      ORADDR
+         J       @RTADDR
+READ     JEQ     READ
+         CLEAR   A
+         COMP    #48
+         SUB     #48
+         COMP    #10
+         JLT     GOBACK
+         SUB     #7
+GOBACK   RSUB
+         JEQ     EXIT
+         COMP    #4
+         JGT     READ
+EXIT     CLEAR   L
+         J       @ADDR
+HEX      RESB    1
+ADDR2    RESB    1
+ADDR3    RESB    1
+RTADDR   RESB    1
+ORADDR   REB     2
+RTADDR   RESB    100
+ADDR     RESB    1
+         END

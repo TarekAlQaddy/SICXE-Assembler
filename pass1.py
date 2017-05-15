@@ -12,7 +12,7 @@ class Pass1:
         self.name = ''
         self.line_no = 0
         self.prog_len = 0
-        self.directives = {'resw': 1, 'resb': 1, 'base': 1, 'byte': 1, 'word': 1, 'start': 1, 'end': 1}
+        self.directives = {'resw': 1, 'resb': 1, 'base': 1, 'nobase': 1, 'byte': 1, 'word': 1, 'start': 1, 'end': 1, 'equ': 1}
         self.instructions = []
         self.errors = error
         self.registers = ['a', 'l', 'pc', 'sw', 'b', 's', 't', 'f']
@@ -38,6 +38,8 @@ class Pass1:
             start_add = start_inst[17:34]
             start_add = start_add.strip()
             self.name = start_inst[0:7].strip().lower()
+            self.OPTAB[start_inst[0:7].lower().strip()] = int(start_add, 16)
+            print(start_add)
             return int(start_add, 16)
         else:
             self.errors.append("No START at begin of the program")
@@ -59,6 +61,23 @@ class Pass1:
     def calc_prog_len(self):
         return self.end_address - self.start_address
 
+    def equ_handle(self, label, operand):
+        final = 0
+        try:
+            # e.g MAXLEN EQU 4096
+            final = int(operand)
+        except ValueError:
+            if operand.find("'") != -1:
+                # e.g MAXLEN EQU x'f6'
+                hexa = operand.partition("'")[-1].rpartition("'")[0]
+                self.SYMTAB[label] = [int('0x' + hexa, 0), 'A']
+                return
+            else:
+                # handle expressions e.g MAX EQU MINLEN+MAXLEN-14
+                pass
+        self.SYMTAB[label] = [final, 'A']
+
+
     def parse(self):
         for index, inst in enumerate(self.instructions[1:]):
             # case of comment
@@ -67,7 +86,7 @@ class Pass1:
                 continue
 
             label = inst[0:7].strip().lower()
-            opcode = inst[9:14].strip().lower()
+            opcode = inst[9:16].strip().lower()
             if opcode == 'byte':
                 if inst[17] == 'C' or inst[17] == 'X':
                     operand = inst[17:34].strip()
@@ -79,18 +98,19 @@ class Pass1:
             if label != "":
                 if not self.SYMTAB.get(label):
                     label_flag = True
-                    self.SYMTAB[label] = self.LOCCTR
+                    self.SYMTAB[label] = [self.LOCCTR, 'R']
                 else:
                     label_flag = False
                     self.errors.append("Error: Label {} defined more than once".format(label))
 
+            # equ handling
+            if opcode == 'equ':
+                self.equ_handle(label, operand)
+                continue
             # end handling
             if index == len(self.instructions) - 2:
                 self.end_handle(opcode, operand)
                 self.print_line(inst)
-                return
-            if opcode == "end":
-                print("Error: End found in middle of instructions")
                 return
 
             # opcode handling if not in OPTAB
@@ -115,6 +135,8 @@ class Pass1:
             temp_dict["locctr"] = self.LOCCTR
 
             f_type = Pass1.locctr_increamenter(opcode, operand)
+            if not f_type:
+                continue
             temp_dict["type"] = f_type[0]
             temp_dict["is_dir"] = f_type[1]
 
@@ -129,11 +151,23 @@ class Pass1:
         returns the number of bytes to be increamented by LOCCTR and if the opcode is assembler directive or not
         :return: [no_of_bytes, is_directive?]
         """
-        if opcode == "base":
+        if opcode == "base" or opcode == "nobase":
             return [0, True]
         if opcode == "resw":
+            try:
+                value = int(operand)
+            except ValueError:
+                print("operand is not a number")
+                return False
             temp = int(operand) * 3
             return [temp, True]
+        if opcode == "resb":
+            try:
+                value = int(operand)
+            except ValueError:
+                print("operand is not a number")
+                return False
+            return [value, True]
         if opcode == "word":
             return [3, True]
         if opcode == "byte":
@@ -150,9 +184,7 @@ class Pass1:
                 no_of_bits = ceil(log2(int(operand)))
                 bytes = ceil(no_of_bits / 8)
                 return [bytes, True]
-        if opcode == "resb":
-            value = int(operand)
-            return [value, True]
+
         if opcode == "rsub":
             return [3, False]
         if opcode.find('+') != -1:

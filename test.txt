@@ -15,7 +15,8 @@ RLOOP    TD      INPUT
          JLT     RLOOP
          COMPR   A,S
          JGT     RLOOP
-         STA     LENGTH
+         STA     LE
+MAXLEN   EQU     x'f96'
          RSUB
 INPUT    BYTE    X'F1'
 .

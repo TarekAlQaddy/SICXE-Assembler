@@ -1,5 +1,5 @@
 class Pass2:
-    def __init__(self,error):
+    def __init__(self, error):
         self.SYMTAB = {}
         self.table = []
         self.opcode = {}
@@ -38,9 +38,9 @@ class Pass2:
         length_list1 = []
 
         # pre fill length_list1 with T lengths that will be put in HTME
-        self.inst_num=-1
+        self.inst_num = -1
         for inst in self.table:
-            self.inst_num+=1
+            self.inst_num += 1
             try:
                 if temp_len - len(inst['objcode']) < 0 or inst['opcode'] == 'resw' or inst['opcode'] == 'resb':
                     length_list1.append((60 - temp_len) // 2)
@@ -52,7 +52,7 @@ class Pass2:
             except KeyError:
                 self.errors.append('Severe error at instruction number {}'.format(self.inst_num))
         length_list1.append((60 - temp_len) // 2)
-        self.inst_num=-1
+        self.inst_num = -1
         # remove zeros
         length_list = []
         for i in length_list1:
@@ -67,7 +67,7 @@ class Pass2:
         index = 1
         flag = False
         for inst in self.table:
-            self.inst_num+=1
+            self.inst_num += 1
             if inst['opcode'] == 'resw' or inst['opcode'] == 'resb':
                 if self.final[-1] == 'T ':
                     continue
@@ -96,8 +96,10 @@ class Pass2:
                 self.errors.append('Severe error at instruction number {}'.format(self.inst_num))
 
             flag = False
-
-        self.final.append('\n')
+        if self.final[-1] == 'T ':
+            self.final.pop()
+        else:
+            self.final.append('\n')
 
         for inst in self.table:
             if inst['type'] == 4 and self.SYMTAB.get(inst['operand']) != None:
@@ -110,7 +112,7 @@ class Pass2:
         first_ex = 0
         if self.first_exec != '':
             try:
-                first_ex = hex(int(self.SYMTAB[self.first_exec]))[2:]
+                first_ex = hex(int(self.SYMTAB[self.first_exec][0]))[2:]
                 self.final.append('E ' + first_ex)
             except KeyError:
                 self.errors.append("label of first executable instruction is not pre defined !")
@@ -126,10 +128,10 @@ class Pass2:
         file.write('\n \n')
         printable_list = list(set(self.errors))
         for i in printable_list:
-            file.write(i+'\n')
+            file.write(i + '\n')
 
     def parse(self):
-        self.inst_num=-1
+        self.inst_num = -1
         for index, inst in enumerate(self.table):
             hex_object_code = 0
             self.inst_num += 1
@@ -138,9 +140,12 @@ class Pass2:
             temp = inst['opcode']
             if temp == 'ldb':
                 self.base_flag = True
+            if temp == 'nobase':
+                self.base_flag = False
+                continue
             if temp == 'base' and self.base_flag:
                 try:
-                    self.base_reg = self.SYMTAB[inst['operand']]
+                    self.base_reg = self.SYMTAB[inst['operand']][0]
                 except KeyError:
                     self.errors.append("{} Label not defined!".format(inst['operand']))
 
@@ -185,7 +190,11 @@ class Pass2:
                 else:
                     string = operand.split(",")
                     hex_object_code |= self.reg_num.get(string[0]) << 4
-                    hex_object_code |= self.reg_num.get(string[1])
+                    try:
+                        num = int(string[1])
+                        hex_object_code |= num
+                    except ValueError:
+                        hex_object_code |= self.reg_num.get(string[1])
                 self.table[index]['objcode'] = hex(hex_object_code)[2:].zfill(4)
 
             elif inst['type'] == 3:
@@ -204,7 +213,7 @@ class Pass2:
                 elif inst['operand'][0] == '@':
                     hex_object_code |= 0x020000
                     try:
-                        operand_address = self.SYMTAB[operand[1:]]
+                        operand_address = self.SYMTAB[operand[1:]][0]
                     except KeyError:
                         self.errors.append("{} label not defined !".format(operand[1:]))
                         continue
@@ -244,7 +253,7 @@ class Pass2:
                             continue
                     else:
                         try:
-                            operand_address = self.SYMTAB[operand[1:]]
+                            operand_address = self.SYMTAB[operand[1:]][0]
                         except KeyError:
                             self.errors.append('{} label not defined'.format(operand[1:]))
                             continue
@@ -270,7 +279,7 @@ class Pass2:
                 else:
                     hex_object_code |= 0x030000
                     try:
-                        operand_address = self.SYMTAB[operand]
+                        operand_address = self.SYMTAB[operand][0]
                     except KeyError:
                         self.errors.append('{} label not defined!'.format(operand))
                         continue
@@ -308,7 +317,7 @@ class Pass2:
                     hex_object_code |= 0x02000000  # n is set
                     operand_address = 0
                     try:
-                        operand_address = self.SYMTAB[operand[1:]]
+                        operand_address = self.SYMTAB[operand[1:]][0]
                     except KeyError:
                         self.errors.append('{} label not defined!'.format(operand[1:]))
                         continue
@@ -331,11 +340,12 @@ class Pass2:
                         if -524288 <= operand_address <= 524287:
                             hex_object_code |= operand_address
                         else:
-                            self.errors.append('immediate too big for format 4 at instruction number {}'.format(self.inst_num))
+                            self.errors.append(
+                                'immediate too big for format 4 at instruction number {}'.format(self.inst_num))
                             continue
                     else:
                         try:
-                            operand_address = self.SYMTAB[operand]
+                            operand_address = self.SYMTAB[operand][0]
                         except KeyError:
                             self.errors.append('{} label not defined!'.format(operand))
                             continue
@@ -344,7 +354,7 @@ class Pass2:
                 else:
                     hex_object_code |= 0x03000000
                     try:
-                        operand_address = self.SYMTAB[operand]
+                        operand_address = self.SYMTAB[operand][0]
                     except KeyError:
                         self.errors.append('{} label not defined!'.format(operand))
                         continue
