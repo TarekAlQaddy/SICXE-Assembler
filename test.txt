@@ -16,7 +16,6 @@ RLOOP    TD      INPUT
          COMPR   A,S
          JGT     RLOOP
          STA     LE
-MAXLEN   EQU     x'f96'
          RSUB
 INPUT    BYTE    X'F1'
 .
@@ -33,6 +32,7 @@ WLOOP    TD      OUTPUT
          STA     VALUE1
          STS     VALUE2
          LDA     VALUE2
+VAL1     EQU     WLOOP-WRREC+INPUT
          LDS     VALUE1
          TIXR    T
          JLT     WLOOP

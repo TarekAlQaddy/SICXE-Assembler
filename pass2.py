@@ -112,7 +112,7 @@ class Pass2:
         first_ex = 0
         if self.first_exec != '':
             try:
-                first_ex = hex(int(self.SYMTAB[self.first_exec][0]))[2:]
+                first_ex = hex(int(self.SYMTAB[self.first_exec]))[2:]
                 self.final.append('E ' + first_ex)
             except KeyError:
                 self.errors.append("label of first executable instruction is not pre defined !")
@@ -145,7 +145,7 @@ class Pass2:
                 continue
             if temp == 'base' and self.base_flag:
                 try:
-                    self.base_reg = self.SYMTAB[inst['operand']][0]
+                    self.base_reg = self.SYMTAB[inst['operand']]
                 except KeyError:
                     self.errors.append("{} Label not defined!".format(inst['operand']))
 
@@ -213,7 +213,7 @@ class Pass2:
                 elif inst['operand'][0] == '@':
                     hex_object_code |= 0x020000
                     try:
-                        operand_address = self.SYMTAB[operand[1:]][0]
+                        operand_address = self.SYMTAB[operand[1:]]
                     except KeyError:
                         self.errors.append("{} label not defined !".format(operand[1:]))
                         continue
@@ -253,7 +253,7 @@ class Pass2:
                             continue
                     else:
                         try:
-                            operand_address = self.SYMTAB[operand[1:]][0]
+                            operand_address = self.SYMTAB[operand[1:]]
                         except KeyError:
                             self.errors.append('{} label not defined'.format(operand[1:]))
                             continue
@@ -279,7 +279,7 @@ class Pass2:
                 else:
                     hex_object_code |= 0x030000
                     try:
-                        operand_address = self.SYMTAB[operand][0]
+                        operand_address = self.SYMTAB[operand]
                     except KeyError:
                         self.errors.append('{} label not defined!'.format(operand))
                         continue
@@ -317,7 +317,7 @@ class Pass2:
                     hex_object_code |= 0x02000000  # n is set
                     operand_address = 0
                     try:
-                        operand_address = self.SYMTAB[operand[1:]][0]
+                        operand_address = self.SYMTAB[operand[1:]]
                     except KeyError:
                         self.errors.append('{} label not defined!'.format(operand[1:]))
                         continue
@@ -345,7 +345,7 @@ class Pass2:
                             continue
                     else:
                         try:
-                            operand_address = self.SYMTAB[operand][0]
+                            operand_address = self.SYMTAB[operand]
                         except KeyError:
                             self.errors.append('{} label not defined!'.format(operand))
                             continue
@@ -354,7 +354,7 @@ class Pass2:
                 else:
                     hex_object_code |= 0x03000000
                     try:
-                        operand_address = self.SYMTAB[operand][0]
+                        operand_address = self.SYMTAB[operand]
                     except KeyError:
                         self.errors.append('{} label not defined!'.format(operand))
                         continue

@@ -4,6 +4,7 @@ from math import log2, ceil
 class Pass1:
     def __init__(self, optab,error):
         self.SYMTAB = {}
+        self.SYMTABTYPES = {}
         self.OPTAB = optab
         self.LOCCTR = 0
         self.start_address = 0
@@ -70,12 +71,34 @@ class Pass1:
             if operand.find("'") != -1:
                 # e.g MAXLEN EQU x'f6'
                 hexa = operand.partition("'")[-1].rpartition("'")[0]
-                self.SYMTAB[label] = [int('0x' + hexa, 0), 'A']
+                self.SYMTAB[label] = int('0x' + hexa, 0)
+                self.SYMTABTYPES[label] = 'A'
                 return
             else:
-                # handle expressions e.g MAX EQU MINLEN+MAXLEN-14
-                pass
-        self.SYMTAB[label] = [final, 'A']
+                # handle expressions e.g MAX EQU MAXLEN-MINLEN
+                try:
+                    final = eval(operand, self.SYMTAB)
+                except NameError:
+                    self.errors.append('label is not defined in expression !')
+                    return
+                pos_flag = 0
+                if operand[0] != '-':
+                    pos_flag = 1
+                if (pos_flag + operand.count("+")) == operand.count("-"):  # in pairs => absolute
+                    if operand.find('*') != -1 or operand.find('/') != -1:
+                        self.errors.append("use of * or / is not allowed here !")
+                        return
+                    else:
+                        self.SYMTAB[label] = final
+                        self.SYMTABTYPES[label] = 'A'
+                        return
+                else:
+                    self.SYMTAB[label] = final
+                    self.SYMTABTYPES[label] = 'R'
+                    return
+
+        self.SYMTAB[label] = final
+        self.SYMTABTYPES[label] = 'A'
 
 
     def parse(self):
@@ -95,10 +118,11 @@ class Pass1:
 
             # label handling
             label_flag = None
-            if label != "":
+            if label != "" and opcode != 'equ':
                 if not self.SYMTAB.get(label):
                     label_flag = True
-                    self.SYMTAB[label] = [self.LOCCTR, 'R']
+                    self.SYMTAB[label] = self.LOCCTR
+                    self.SYMTABTYPES[label] = 'R'
                 else:
                     label_flag = False
                     self.errors.append("Error: Label {} defined more than once".format(label))

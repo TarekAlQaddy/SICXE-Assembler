@@ -14,10 +14,8 @@ pass1 = Pass1(tab, errors)
 
 pass1.start('test.txt')
 
-# for n in pass1.final:
-#     print(n)
 
-print(pass1.SYMTAB)
+print(pass1.SYMTABTYPES)
 
 pass2 = Pass2(errors)
 
