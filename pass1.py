@@ -1,5 +1,4 @@
-from math import log2, ceil
-
+import math
 
 class Pass1:
     def __init__(self, optab,error):
@@ -13,11 +12,11 @@ class Pass1:
         self.name = ''
         self.line_no = 0
         self.prog_len = 0
-        self.directives = {'resw': 1, 'resb': 1, 'base': 1, 'nobase': 1, 'byte': 1, 'word': 1, 'start': 1, 'end': 1, 'equ': 1}
+        self.directives = { 'resw': 1, 'resb': 1, 'base': 1, 'nobase': 1, 'byte': 1, 'word': 1, 'start': 1, 'end': 1, 'equ': 1}
         self.instructions = []
         self.errors = error
         self.registers = ['a', 'l', 'pc', 'sw', 'b', 's', 't', 'f']
-        self.final = []
+        self.final = [] 
 
     def start(self, file_name):
         file = open(file_name, 'r')
@@ -29,6 +28,7 @@ class Pass1:
             print(self.errors[0])
             return
         self.parse()
+        print(self.final)
         self.print_errors()
 
     def start_handle(self, start_inst):
@@ -45,12 +45,10 @@ class Pass1:
         else:
             self.errors.append("No START at begin of the program")
             return 0
-
     def is_reg(self, str):
         if str in self.registers:
             return True
         return False
-
     def end_handle(self, opcode, operand):
         if opcode == 'end':
             self.end_address = self.LOCCTR
@@ -63,7 +61,11 @@ class Pass1:
         return self.end_address - self.start_address
 
     def equ_handle(self, label, operand):
-        final = 0
+        final = 0 
+        if operand == '*':
+            final = self.LOCCTR
+            self.SYMTAB[label]= final
+            return
         try:
             # e.g MAXLEN EQU 4096
             final = int(operand)
@@ -77,7 +79,7 @@ class Pass1:
             else:
                 # handle expressions e.g MAX EQU MAXLEN-MINLEN
                 try:
-                    final = eval(operand, self.SYMTAB)
+                     final = eval(operand, self.SYMTAB)
                 except NameError:
                     self.errors.append('label is not defined in expression !')
                     return
@@ -100,22 +102,28 @@ class Pass1:
         self.SYMTAB[label] = final
         self.SYMTABTYPES[label] = 'A'
 
-
     def parse(self):
         for index, inst in enumerate(self.instructions[1:]):
             # case of comment
             if inst[0].strip() == '.':
                 print(inst)
                 continue
-
             label = inst[0:7].strip().lower()
             opcode = inst[9:16].strip().lower()
             if opcode == 'byte':
                 if inst[17] == 'C' or inst[17] == 'X':
                     operand = inst[17:34].strip()
             else:
-                operand = inst[17:34].strip().lower()
-
+                operand = inst[17:34].strip().lower() #--------------------------------
+                if (opcode =='csect'):
+                 temp_dict={}
+                 temp_dict["opcode"] = opcode
+                 temp_dict["operand"] = None
+                 temp_dict["label"] = None
+                 temp_dict["locctr"] =0
+                 temp_dict["type"]=0
+                 temp_dict["is_dir"]= True
+                 self.final.append(temp_dict)
             # label handling
             label_flag = None
             if label != "" and opcode != 'equ':
@@ -127,47 +135,59 @@ class Pass1:
                     label_flag = False
                     self.errors.append("Error: Label {} defined more than once".format(label))
 
+            if opcode == 'csect':
+                self.LOCCTR =0
+                continue
             # equ handling
             if opcode == 'equ':
                 self.equ_handle(label, operand)
+                continue
+            # org handle     
+            if opcode == 'org':
+                self.LOCCTR = int(operand)
                 continue
             # end handling
             if index == len(self.instructions) - 2:
                 self.end_handle(opcode, operand)
                 self.print_line(inst)
                 return
-
             # opcode handling if not in OPTAB
             temp = opcode
+            temp_dict = {}
             if temp[0] == '+':
                 temp = temp[1:]
+            if opcode =='extref' or opcode =='extdef':
+                 temp_dict["opcode"] = opcode
+                 temp_dict["operand"] = operand
+                 temp_dict["label"] = None
+                 temp_dict["locctr"] =0
+                 temp_dict["type"]=0
+                 temp_dict["is_dir"]= True
+                 self.final.append(temp_dict)
+            
             if not self.OPTAB.get(temp):
                 if not self.directives.get(temp):
-                    self.errors.append("Error: No such opcode {}".format(temp))
-                    self.print_errors()
-                    continue
-
+                        self.errors.append("Error: No such opcode {}".format(temp))
+                        self.print_errors()
+                continue
             self.print_line(inst)
-
-            temp_dict = {}
             temp_dict["opcode"] = opcode
             temp_dict["operand"] = operand
+           
             if label_flag:
                 temp_dict["label"] = label
             else:
                 temp_dict["label"] = None
             temp_dict["locctr"] = self.LOCCTR
-
             f_type = Pass1.locctr_increamenter(opcode, operand)
             if not f_type:
                 continue
             temp_dict["type"] = f_type[0]
             temp_dict["is_dir"] = f_type[1]
-
             self.final.append(temp_dict)
-
             self.LOCCTR += f_type[0]
             self.line_no += 1
+            
 
     @staticmethod
     def locctr_increamenter(opcode, operand):
@@ -205,8 +225,8 @@ class Pass1:
             elif operand[0].lower() == 'c':
                 return [temp, True]
             else:
-                no_of_bits = ceil(log2(int(operand)))
-                bytes = ceil(no_of_bits / 8)
+                no_of_bits = math.ceil(math.log(int(operand),2))
+                bytes = math.ceil(no_of_bits / 8)
                 return [bytes, True]
 
         if opcode == "rsub":
@@ -222,7 +242,6 @@ class Pass1:
             return [2, False]
         if operand.isspace():
             return [1, False]
-
         return [3, False]
 
     def print_line(self, inst):

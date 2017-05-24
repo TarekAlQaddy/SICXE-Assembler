@@ -5,6 +5,8 @@ class Pass2:
         self.opcode = {}
         self.reg_num = {'a': 0x00, 'x': 0x01, 'l': 0x02, 'pc': 0x08, 'sw': 0x09, 'b': 0x03, 's': 0x04, 't': 0x05,
                         'f': 0x06}
+        self.extdef =[]
+        self.extref=[]
         self.base_flag = False
         self.base_reg = None
         self.prog_len = 0
@@ -108,7 +110,6 @@ class Pass2:
                 self.final.append(loctr)
                 self.final.append(' 05')
                 self.final.append('\n')
-
         first_ex = 0
         if self.first_exec != '':
             try:
@@ -133,11 +134,20 @@ class Pass2:
     def parse(self):
         self.inst_num = -1
         for index, inst in enumerate(self.table):
+            if(inst['opcode']=='extref'):
+                tempo = inst['operand'].split(',')
+                for target_list in tempo:
+                    self.extref.append(target_list)
+            if(inst['opcode']=='extdef'):
+                tempo = inst['operand'].split(',')
+                for target_list in tempo:
+                    self.extdef.append(target_list)
             hex_object_code = 0
             self.inst_num += 1
             str_object_code = ''
-
+            
             temp = inst['opcode']
+            print(temp)
             if temp == 'ldb':
                 self.base_flag = True
             if temp == 'nobase':
@@ -184,12 +194,12 @@ class Pass2:
                 opcode = int('0x' + self.opcode[inst['opcode']], 0)
                 hex_object_code |= (opcode << 8)
                 operand = inst['operand']
+                print (self.reg_num.get(inst['operand']))
                 if operand.find(",") == -1:
-                    if self.reg_num.get(operand):
                         hex_object_code |= (self.reg_num.get(operand) << 4)
                 else:
                     string = operand.split(",")
-                    hex_object_code |= self.reg_num.get(string[0]) << 4
+                    print(string[1])
                     try:
                         num = int(string[1])
                         hex_object_code |= num
@@ -198,18 +208,19 @@ class Pass2:
                 self.table[index]['objcode'] = hex(hex_object_code)[2:].zfill(4)
 
             elif inst['type'] == 3:
+                print(inst['opcode'])
                 hex_object_code = 0x000000
-
                 opcode = int('0x' + self.opcode[inst['opcode']], 0)
                 hex_object_code = (hex_object_code | opcode) << 16
                 operand = inst['operand']
                 locctr = inst['locctr']
-
                 if (operand.find(',') != -1) and (operand[-1] == 'x'):
                     hex_object_code |= 0x008000
                     operand = operand[:len(operand) - 2]
                 if inst['opcode'] == 'rsub':
                     hex_object_code = 0x4F0000
+                elif(inst['operand'] in self.extref):
+                    hex_object_code &= 0xfff000
                 elif inst['operand'][0] == '@':
                     hex_object_code |= 0x020000
                     try:
@@ -312,7 +323,6 @@ class Pass2:
                 if (operand.find(',') != -1) and (operand[-1] == 'x'):
                     hex_object_code |= 0x00800000  # x is set
                     operand = operand[:-1]
-
                 if operand[0] == '@':
                     hex_object_code |= 0x02000000  # n is set
                     operand_address = 0
@@ -355,10 +365,15 @@ class Pass2:
                     hex_object_code |= 0x03000000
                     try:
                         operand_address = self.SYMTAB[operand]
+                        
                     except KeyError:
                         self.errors.append('{} label not defined!'.format(operand))
                         continue
-
                     hex_object_code |= operand_address
+                    print(inst['operand'])
+                    print(self.extref)
+                    if(inst['operand'] in self.extref):
+                         hex_object_code &= 0xfff00000
+               
                 self.table[index]['objcode'] = hex(hex_object_code)[2:].zfill(8)
         self.modify_final()

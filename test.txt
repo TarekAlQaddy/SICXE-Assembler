@@ -1,42 +1,53 @@
-FIBO     START   0
-FIRST    LDT     #1
-         LDS     #10
-         +JSUB   RDREC
-         +JSUB   WRREC
-LENGTH   RESW    1
-.
-. SUBROUTINE RDREC
-.
-RDREC    CLEAR   A
-RLOOP    TD      INPUT
-         JEQ     RLOOP
-         RD      INPUT
-         COMPR   A,T
-         JLT     RLOOP
-         COMPR   A,S
-         JGT     RLOOP
-         STA     LE
-         RSUB
-INPUT    BYTE    X'F1'
-.
-.SUBROUTINE WDRE C
-.
-WRREC    LDX     #0
-         LDS     #1
-         LDA     #0
-         LDT     LENGTH
-WLOOP    TD      OUTPUT
-         JEQ     WLOOP
-         WD      OUTPUT
-         ADDR    S,A
-         STA     VALUE1
-         STS     VALUE2
-         LDA     VALUE2
-VAL1     EQU     WLOOP-WRREC+INPUT
-         LDS     VALUE1
-         TIXR    T
-         JLT     WLOOP
-OUTPUT   BYTE    X'05'
-VALUE1   RESW    1
-VALUE2   RESW    1
-         END     FIRST
+MAIN     START   0000
+         EXTDEF  ADDR1,ADDR2,ADDR3
+         EXTREF  RTADDR,GETPAIR       
+         CLEAR   X
+         +JSUB   GETPAIR
+         STCH    ADDR2
+         +JSUB   GETPAIR
+         STCH    ADDR3
+         LDB     ADDR1
+         +JSUB   GETPAIR
+         STCH    ADDR1 
+         +JSUB   GETPAIR
+         STCH    ADDR2
+LOOP     +JSUB   GETPAIR
+         STCH    ADDR1,X
+         TIXR    X
+         +STCH   RTADDR
+         J       LOOP
+ADDR1    RESB    0001
+ADDR2    RESB    0001
+ADDR3    RESB    0001
+GETPAIR  CSECT
+         EXTDEF  RTADDR,ORADDR  
+         EXTREF  READ   
+         STL     RTADDR
+         +JSUB   READ
+         SHIFTL  A,4
+         STCH    HEX
+         OR      ORADDR
+         J       @RTADDR
+RTADDR   RESB    0001
+ORADDR   RESB    0001
+HEX      RESB    0001
+READ     CSECT
+         EXTREF  ADDR1     
+         TD      INDEV
+         JEQ     READ 
+         CLEAR   A
+         RD      INDEV
+         COMP    #48
+         JLT     EOFCK
+         SUB     48
+         COMP    10
+         JLT     GOBACK
+         SUB     7
+GOBACK   RSUB   
+EOFCK    COMP    33
+         JEQ     EXIT
+         COMP    4
+         JGT     READ
+EXIT     CLEAR   L 
+         +J      ADDR1      
+         END     0000
