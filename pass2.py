@@ -6,6 +6,9 @@ class Pass2:
         self.reg_num = {'a': 0x00, 'x': 0x01, 'l': 0x02, 'pc': 0x08, 'sw': 0x09, 'b': 0x03, 's': 0x04, 't': 0x05,
                         'f': 0x06}
         self.extdef =[]
+        self.table1=[]
+        self.table2=[]
+        self.table3=[]
         self.extref=[]
         self.base_flag = False
         self.base_reg = None
@@ -30,15 +33,11 @@ class Pass2:
 
     def convert_to_ascii(self, text):
         return "".join("{:02x}".format(ord(c)) for c in text)
+    
 
     def modify_final(self):
-        """
-        modifies self.final array to have the HTME record
-        :return:
-        """
         temp_len = 60
         length_list1 = []
-
         # pre fill length_list1 with T lengths that will be put in HTME
         self.inst_num = -1
         for inst in self.table:
@@ -108,19 +107,36 @@ class Pass2:
                 self.final.append('M ')
                 loctr = str(hex(inst['locctr'] + 1)[2:]).zfill(6)
                 self.final.append(loctr)
-                self.final.append(' 05')
+                self.final.append(' 05 + '+inst['operand'])
                 self.final.append('\n')
+                
+                    
         first_ex = 0
+
         if self.first_exec != '':
             try:
                 first_ex = hex(int(self.SYMTAB[self.first_exec]))[2:]
                 self.final.append('E ' + first_ex)
             except KeyError:
                 self.errors.append("label of first executable instruction is not pre defined !")
-                self.final.append('E ' + hex(self.start_add)[2:])
+                self.final.append('R ')
+                for inw in self.extref:
+                    self.final.append(inw+' ')
+                self.final.append('\nD ')
+                for mohy in self.extdef:
+                    self.final.append(mohy+' ')
+                    for tarek in self.SYMTAB:
+                       if(tarek== mohy):
+                           print('---------------'+str(self.SYMTAB[tarek])+'-------------')
+                           self.final.append(str(hex(self.SYMTAB[tarek]))+' ')
+                self.final.append('\nE ' + hex(self.start_add)[2:])
+                self.final.append('\n')
+                self.final.append('\n')
         else:
             self.final.append('E ' + hex(self.start_add)[2:])
-
+            self.final.append('\n')
+            self.final.append('\n')
+            
     def write_to_htme(self, filename):
         file = open(filename, 'w')
 

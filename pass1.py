@@ -17,6 +17,10 @@ class Pass1:
         self.errors = error
         self.registers = ['a', 'l', 'pc', 'sw', 'b', 's', 't', 'f']
         self.final = [] 
+        self.table1=[]
+        self.table2=[]
+        self.table3=[]
+        
 
     def start(self, file_name):
         file = open(file_name, 'r')
@@ -28,7 +32,7 @@ class Pass1:
             print(self.errors[0])
             return
         self.parse()
-        print(self.final)
+        self.the_splitter()
         self.print_errors()
 
     def start_handle(self, start_inst):
@@ -59,7 +63,25 @@ class Pass1:
 
     def calc_prog_len(self):
         return self.end_address - self.start_address
-
+    def the_splitter(self):
+        i=0
+        try:  
+            while(self.final[i]['opcode']!= 'csect'):
+                self.table1.append(self.final[i])
+                i+=1 
+            i+=1 
+            while(self.final[i]['opcode']!= 'csect'):
+                self.table2.append(self.final[i])
+                i+=1  
+                
+            i+=1
+       
+            while(self.final[i]['opcode']!= 'csect'):
+                self.table3.append(self.final[i])
+                i+=1  
+        except IndexError:
+            return
+       
     def equ_handle(self, label, operand):
         final = 0 
         if operand == '*':
@@ -114,7 +136,7 @@ class Pass1:
                 if inst[17] == 'C' or inst[17] == 'X':
                     operand = inst[17:34].strip()
             else:
-                operand = inst[17:34].strip().lower() #--------------------------------
+                operand = inst[17:40].strip().lower() #--------------------------------
                 if (opcode =='csect'):
                  temp_dict={}
                  temp_dict["opcode"] = opcode
@@ -124,6 +146,8 @@ class Pass1:
                  temp_dict["type"]=0
                  temp_dict["is_dir"]= True
                  self.final.append(temp_dict)
+            
+                    
             # label handling
             label_flag = None
             if label != "" and opcode != 'equ':
@@ -134,7 +158,7 @@ class Pass1:
                 else:
                     label_flag = False
                     self.errors.append("Error: Label {} defined more than once".format(label))
-
+            print('---------------------------------------'+opcode)
             if opcode == 'csect':
                 self.LOCCTR =0
                 continue
@@ -164,27 +188,33 @@ class Pass1:
                  temp_dict["type"]=0
                  temp_dict["is_dir"]= True
                  self.final.append(temp_dict)
-            
+            if(opcode=='resb'):
+                self.SYMTAB[label]= self.LOCCTR
+                self.LOCCTR+=int(operand)
+                print(self.SYMTAB)
+                continue
             if not self.OPTAB.get(temp):
                 if not self.directives.get(temp):
                         self.errors.append("Error: No such opcode {}".format(temp))
                         self.print_errors()
                 continue
             self.print_line(inst)
+            
             temp_dict["opcode"] = opcode
             temp_dict["operand"] = operand
-           
             if label_flag:
                 temp_dict["label"] = label
             else:
                 temp_dict["label"] = None
             temp_dict["locctr"] = self.LOCCTR
+           
             f_type = Pass1.locctr_increamenter(opcode, operand)
             if not f_type:
                 continue
             temp_dict["type"] = f_type[0]
             temp_dict["is_dir"] = f_type[1]
             self.final.append(temp_dict)
+            
             self.LOCCTR += f_type[0]
             self.line_no += 1
             
@@ -207,7 +237,9 @@ class Pass1:
             return [temp, True]
         if opcode == "resb":
             try:
+                
                 value = int(operand)
+                
             except ValueError:
                 print("operand is not a number")
                 return False
